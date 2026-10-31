@@ -22,6 +22,9 @@ app.use(cors({
 app.use(compression());
 app.use(cookieParser());
 
+app.use(express.json());
+app.use('/', router());
+
 const server = http.createServer(app);
 
 server.listen(Number(PORT), HOST, () => {
@@ -31,6 +34,3 @@ server.listen(Number(PORT), HOST, () => {
 mongoose.Promise = Promise;
 mongoose.connect(MONGO_URL);
 mongoose.connection.on('error', (error: Error) => console.log(error));
-
-app.use(express.json());
-app.use('/', router());
