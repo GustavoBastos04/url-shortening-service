@@ -6,13 +6,13 @@ export const retrievingUrlStatistics = async (req: express.Request, res: express
         const { shortCode } = req.params;
 
         if (typeof shortCode !== 'string' || !shortCode) {
-            return res.sendStatus(400);
+            return res.status(400).json({message: 'Invalid short code'});
         }
 
         const url = await getURLbyShortCode(shortCode);
         
         if(!url) {
-            return res.sendStatus(404);
+            return res.status(404).json({message: 'URL not found'});
         }
         const response = {
             "id": url._id,
@@ -27,6 +27,6 @@ export const retrievingUrlStatistics = async (req: express.Request, res: express
     }
     catch (error) {
         console.log(error);
-        return res.sendStatus(400);
+        return res.status(500).json({message: 'Internal server error'});
     }
 }
