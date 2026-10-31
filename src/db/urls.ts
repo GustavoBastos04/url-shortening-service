@@ -15,3 +15,8 @@ export const getURLbyShortCode = (shortCode: string) => URLModel.findOne({shortC
 export const createShortCode = (values: Record<string, any>) => new URLModel(values).save().then((url) => url.toObject());
 export const deleteShortCodeByShortCodeName = (shortCode: string) => URLModel.findOneAndDelete({ shortCode });
 export const updateUrlByShortCode = (shortCode: string, values: Record<string, any>) => URLModel.findOneAndUpdate({ shortCode }, values)
+export const incrementAccessCount = (shortCode: string) => URLModel.findOneAndUpdate( 
+    {shortCode},
+    { $inc: {accessCount: 1} },
+    {new: true}
+);
