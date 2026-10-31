@@ -1,11 +1,14 @@
 import express from 'express';
 import { getURLbyShortCode, createShortCode} from '../db/urls';
+import { isValidUrl } from '../helpers/validUrl';
+
+const MAX_ATTEMPTS = 5;
 
 function makeShortCode(length: number) {
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    var charactersLength = characters.length;
-    for ( var i = 0; i < length; i++ ) {
+    let result           = '';
+    const characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charactersLength = characters.length;
+    for ( let i = 0; i < length; i++ ) {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
     }
     return result;
@@ -14,15 +17,22 @@ function makeShortCode(length: number) {
 export const shortCodeCreation = async(req: express.Request, res: express.Response) => {
     try {
         const {url} = req.body;
-        const shortCode = makeShortCode(8);
-        if(!shortCode || !url){
-            return res.sendStatus(400);
+        
+        const validURL = isValidUrl(url);
+        if(!validURL){
+            return res.status(400).json({message: 'Invalid URL'});
         }
 
-        const existingShortCode = await getURLbyShortCode(shortCode);
+        let shortCode = '';
+        let isShortCodeUnique = false;
 
-        if (existingShortCode) {
-            return res.sendStatus(400);
+        for (let attempt = 0; attempt < MAX_ATTEMPTS && !isShortCodeUnique; attempt++) {
+            shortCode = makeShortCode(8);
+            isShortCodeUnique = !(await getURLbyShortCode(shortCode));
+        }
+
+        if (!isShortCodeUnique) {
+            return res.status(500).json({ message: 'Could not generate a unique short code' });
         }
 
         const urlToCreate = await createShortCode({
@@ -30,10 +40,17 @@ export const shortCodeCreation = async(req: express.Request, res: express.Respon
             shortCode
         })
 
-        return res.status(201).json(urlToCreate).end();
+        const response = {
+            "id": urlToCreate._id,
+            "url": urlToCreate.url,
+            "shortCode": urlToCreate.shortCode,
+            "createdAt": urlToCreate.createdAt,
+            "updatedAt": urlToCreate.updatedAt
+        }
+        return res.status(201).json(response).end();
     }
     catch (error){
         console.log(error);
-        return res.sendStatus(400);
+        return res.status(500).json({message: 'Internal server error'});
     }
 }
